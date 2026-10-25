@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Community - AI Powered Travel & Companion Platform</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1', // Primary Indigo
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              accent: '#8b5cf6', // Violet
+              glow: '#06b6d4'   // Cyan
+            },
+            surface: {
+              50: '#0f172a',
+              100: '#1e293b',
+              200: '#334155',
+              card: 'rgba(30, 41, 59, 0.75)',
+              glass: 'rgba(15, 23, 42, 0.85)'
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'radar-spin': 'spin 4s linear infinite',
+            'float': 'float 3s ease-in-out infinite',
+            'shimmer': 'shimmer 2s infinite linear',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-6px)' },
+            },
+            shimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS for Live Tracking Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Canvas Confetti for Achievements & Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Socket.IO Client CDN for Real-time Backend Communication -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans antialiased overflow-x-hidden selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP NOTIFICATION BANNER / STORYLINE WALKTHROUGH HELPER -->
+  <div id="demo-guide-bar" class="bg-gradient-to-r from-brand-700 via-purple-700 to-indigo-800 text-white text-xs px-4 py-2 border-b border-indigo-500/30 flex items-center justify-between shadow-lg sticky top-0 z-50">
+    <div class="flex items-center space-x-2">
+      <span class="flex h-2 w-2 relative">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+      </span>
+      <span class="font-bold tracking-wide flex items-center gap-1.5 uppercase font-display text-[11px]">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-300"></i>
+        Interactive Presentation Mode
+      </span>
+      <span class="hidden md:inline text-slate-300">|</span>
+      <span id="current-step-label" class="hidden sm:inline font-medium text-indigo-100 bg-black/25 px-2 py-0.5 rounded border border-white/10">
+        Step: 1. Login Screen
+      </span>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <button id="btn-next-demo-step" onclick="smartApp.nextGuidedStep()" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-2.5 py-1 rounded text-xs flex items-center gap-1 transition-all backdrop-blur-sm border border-white/20 active:scale-95">
+        <span>Guided Next Step</span>
+        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+      </button>
+      <button onclick="smartApp.toggleStoryGuide()" class="bg-black/30 hover:bg-black/40 text-slate-200 px-2 py-1 rounded text-xs border border-white/10" title="Toggle Story Guide">
+        <i data-lucide="info" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- STORYLINE GUIDE MODAL -->
+  <div id="story-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative">
+      <button onclick="smartApp.toggleStoryGuide()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+          <i data-lucide="route" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold font-display text-white">Project Presentation Storyline</h3>
+          <p class="text-xs text-slate-400">Complete end-to-end journey from Lucknow to Ghaziabad with AI companion & parcel sharing</p>
+        </div>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+        <div class="p-3 bg-slate-800/80 rounded-xl border border-slate-700/70">
+          <div class="text-xs font-bold text-brand-400 uppercase">Demo Scenario Highlight:</div>
+          <p class="mt-1 text-slate-200 font-medium">"A traveler logs in, posts journey from <span class="text-emerald-400">Lucknow → Ghaziabad</span> on 12 Oct, gets matched with <span class="text-cyan-400">Aman Verma (94% match)</span>, sends connection request, starts secure chat, shares journey, tracks live location with simulated GPS movement, interacts with local community, shares a parcel safely, and checks safety SOS features."</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"><strong>1. Login & Auth:</strong> Quick demo login, trust score 85%</div>
+          <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"><strong>2. Create Journey:</strong> Lucknow to Ghaziabad (Train)</div>
+          <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"><strong>3. AI Matching:</strong> Animated neural scanner & best matches</div>
+          <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"><strong>4. Connect & Accept:</strong> Profile inspect & instant acceptance</div>
+          <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"><strong>5. Secure Chat:</strong> Real-time chat & Journey sharing</div>
+          <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"><strong>6. Live Tracking:</strong> Real map with moving companion & SOS</div>
+          <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"><strong>7. Community & Chat:</strong> Lucknow people in Ghaziabad</div>
+          <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"><strong>8. Parcel & Safety:</strong> Verification badge & SOS triggers</div>
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end gap-2">
+        <button onclick="smartApp.toggleStoryGuide()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-brand-600/30">
+          Close Guide & Continue
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed top-12 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- APP ROOT CONTAINER -->
+  <div id="app" class="min-h-[calc(100vh-37px)] flex flex-col">
+
+    <!-- ================================================================ -->
+    <!-- SCREEN 1: LOGIN SCREEN -->
+    <!-- ================================================================ -->
+    <section id="screen-login" class="screen flex-1 flex items-center justify-center p-4 relative overflow-hidden">
+      <!-- Ambient Background Glows -->
+      <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow"></div>
+      <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow"></div>
+      
+      <div class="max-w-md w-full relative z-10">
+        <!-- Logo & Title -->
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 to-purple-600 text-white shadow-xl shadow-brand-600/30 mb-4 border border-white/20 animate-float">
+            <i data-lucide="compass" class="w-8 h-8"></i>
+          </div>
+          <h1 class="text-3xl font-extrabold font-display bg-gradient-to-r from-white via-slate-100 to-brand-300 bg-clip-text text-transparent">
+            Smart Community <span class="text-brand-400">AI</span>
+          </h1>
+          <p class="text-sm text-slate-400 mt-2"></p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl shadow-black/50">
+          <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-800">
+            <h2 class="text-xl font-bold text-white font-display">Sign In</h2>
+            <span class="text-xs font-semibold px-2.5 py-1 bg-brand-500/10 text-brand-400 border border-brand-500/20 rounded-full flex items-center gap-1">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Verified Access
+            </span>
+          </div>
+
+          <form id="login-form" onsubmit="smartApp.handleLogin(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Email / Mobile Number</label>
+              <div class="relative">
+                <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="login-email" value="anurag.sharma@gmail.com" required class="w-full bg-slate-950/60 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all placeholder-slate-500" placeholder="e.g. yourname@mail.com">
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-1.5">
+                <label class="text-xs font-semibold text-slate-300">Password</label>
+                <a href="javascript:void(0)" onclick="smartApp.showToast('Demo helper: Password reset link sent to demo account', 'info')" class="text-xs text-brand-400 hover:text-brand-300">Forgot password?</a>
+              </div>
+              <div class="relative">
+                <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="password" id="login-password" value="TravelAI@2026" required class="w-full bg-slate-950/60 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all" placeholder="••••••••">
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-brand-600 focus:ring-brand-500">
+                <span>Remember me for 30 days</span>
+              </label>
+              <button type="button" onclick="smartApp.fillDemoLogin()" class="text-cyan-400 hover:underline flex items-center gap-1 font-medium">
+                <i data-lucide="key" class="w-3 h-3"></i> Auto-fill Demo
+              </button>
+            </div>
+
+            <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition-all flex items-center justify-center gap-2 group active:scale-[0.99]">
+              <span id="login-btn-text">Sign In to Community</span>
+              <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+            </button>
+          </form>
+
+          <div class="mt-6 pt-4 border-t border-slate-800/80 text-center">
+            <p class="text-xs text-slate-400">
+              
+              <button onclick="smartApp.navigateTo('screen-register')" class="text-brand-400 font-bold hover:underline ml-1">Create an Account</button>
+            </p>
+          </div>
+        </div>
+
+        <!-- Prototype Quick Tips -->
+        <div class="mt-4 p-3 rounded-2xl bg-slate-900/40 border border-slate-800 text-center text-xs text-slate-400">
+          💡 Demo Note: Click <strong>"Sign In to Community"</strong> or use the top <strong>"Guided Next Step"</strong> button at any time.
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- SCREEN 2: REGISTRATION SCREEN -->
+    <!-- ================================================================ -->
+    <section id="screen-register" class="screen hidden flex-1 flex items-center justify-center p-4 relative">
+      <div class="max-w-xl w-full">
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 to-purple-600 text-white shadow-lg mb-2">
+            <i data-lucide="user-plus" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-2xl font-bold font-display text-white">Join Smart Travel Community</h2>
+          <p class="text-xs text-slate-400 mt-1">Connect with verified travelers, share rides, and build trust</p>
+        </div>
+
+        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+          <form onsubmit="smartApp.handleRegister(event)" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
+                <input type="text" id="reg-name" value="Anurag Sharma" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+                <input type="email" id="reg-email" value=imnitinmaurya21@gmail.com  required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Mobile Number</label>
+                <input type="tel" value="+91 98765 43210" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Profile Photo</label>
+                <div class="flex items-center gap-3">
+                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="avatar" class="w-9 h-9 rounded-full object-cover border-2 border-brand-500">
+                  <button type="button" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300">
+                    Change Photo
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Hometown</label>
+                <input type="text" id="reg-hometown" value="Lucknow" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Current City</label>
+                <input type="text" id="reg-city" value="Ghaziabad (Delhi NCR)" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+                <input type="password" value="TravelAI@2026" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Confirm Password</label>
+                <input type="password" value="TravelAI@2026" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              </div>
+            </div>
+
+            <label class="flex items-center space-x-2 text-xs text-slate-400 pt-2 cursor-pointer">
+              <input type="checkbox" checked required class="rounded bg-slate-800 border-slate-700 text-brand-600">
+              <span>I agree to the Community Safety Guidelines and Terms of Service</span>
+            </label>
+
+            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition-all flex items-center justify-center gap-2">
+              <span>Create Account</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </form>
+
+          <div class="mt-4 text-center">
+            <button onclick="smartApp.navigateTo('screen-login')" class="text-xs text-slate-400 hover:text-slate-200">
+              Already have an account? <span class="text-brand-400 font-semibold">Sign In</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- SCREEN 3: PROFILE VERIFICATION -->
+    <!-- ================================================================ -->
+    <section id="screen-verify" class="screen hidden flex-1 flex items-center justify-center p-4">
+      <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative text-center">
+        <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+
+        <h2 class="text-2xl font-bold font-display text-white">Complete Your Profile</h2>
+        <p class="text-xs text-slate-400 mt-1">Multi-tier AI verification ensures safe and trusted community travel</p>
+
+        <!-- Trust Score Ring Card -->
+        <div class="my-6 p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+          <div class="text-left">
+            <span class="text-xs text-slate-400 uppercase font-semibold">Current AI Trust Score</span>
+            <div class="text-2xl font-extrabold font-display text-emerald-400 flex items-center gap-1.5 mt-0.5">
+              <span>85%</span>
+              <span class="text-xs bg-emerald-500/20 text-emerald-300 font-normal px-2 py-0.5 rounded-full border border-emerald-500/30">Tier 2 Verified</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Eligible for AI companion matching & secure chats</p>
+          </div>
+          <div class="relative w-16 h-16 flex items-center justify-center">
+            <svg class="w-16 h-16 transform -rotate-90">
+              <circle cx="32" cy="32" r="26" stroke="currentColor" stroke-width="4" class="text-slate-800" fill="transparent"></circle>
+              <circle cx="32" cy="32" r="26" stroke="currentColor" stroke-width="4" class="text-emerald-400" stroke-dasharray="163" stroke-dashoffset="24.45" stroke-linecap="round" fill="transparent"></circle>
+            </svg>
+            <i data-lucide="check-circle-2" class="w-6 h-6 text-emerald-400 absolute"></i>
+          </div>
+        </div>
+
+        <!-- Verification Steps Checklist -->
+        <div class="space-y-2.5 text-left text-xs mb-6">
+          <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between text-emerald-300">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+              <span class="font-semibold">Email Verification</span>
+            </div>
+            <span class="text-[11px] font-mono opacity-80">anurag.sharma@travelnet.ai</span>
+          </div>
+
+          <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between text-emerald-300">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+              <span class="font-semibold">Mobile OTP Verification</span>
+            </div>
+            <span class="text-[11px] font-mono opacity-80">+91 98765 43210</span>
+          </div>
+
+          <div class="p-3 bg-slate-800/80 border border-slate-700 rounded-xl flex items-center justify-between text-slate-300">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="circle-dot" class="w-4 h-4 text-brand-400"></i>
+              <span class="font-medium">Govt. ID Verification (Aadhaar/DL)</span>
+            </div>
+            <span class="text-[10px] bg-brand-500/20 text-brand-300 px-1.5 py-0.5 rounded border border-brand-500/30">In Review (Optional)</span>
+          </div>
+        </div>
+
+        <button onclick="smartApp.completeVerification()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 transition-all">
+          <span>Continue to Dashboard</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- AUTHENTICATED APP SHELL (SIDEBAR + TOPBAR + VIEWS) -->
+    <!-- ================================================================ -->
+    <div id="authenticated-shell" class="hidden flex-1 flex overflow-hidden">
+      
+      <!-- DESKTOP SIDEBAR -->
+      <aside class="hidden md:flex flex-col w-64 bg-slate-900/95 border-r border-slate-800 backdrop-blur-xl flex-shrink-0 z-20">
+        <!-- App Brand in Sidebar -->
+        <div class="p-4 border-b border-slate-800 flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-purple-600 flex items-center justify-center text-white shadow-md">
+            <i data-lucide="compass" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="font-bold text-white font-display text-sm">Smart Community</div>
+            <div class="text-[10px] text-cyan-400 font-semibold tracking-wider flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span> AI ACTIVE
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar text-xs">
+          <div class="text-[10px] font-bold uppercase text-slate-500 px-3 pb-1 tracking-wider">Main</div>
+          
+          <button onclick="smartApp.switchTab('tab-dashboard')" data-tab-btn="tab-dashboard" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors active">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 text-brand-400"></i>
+            <span>Dashboard</span>
+          </button>
+
+          <button onclick="smartApp.switchTab('tab-create-journey')" data-tab-btn="tab-create-journey" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>
+            <span class="flex-1 text-left">Create Journey</span>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold">New</span>
+          </button>
+
+          <button onclick="smartApp.switchTab('tab-ai-matching')" data-tab-btn="tab-ai-matching" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="bot" class="w-4 h-4 text-purple-400"></i>
+            <span class="flex-1 text-left">AI Matching</span>
+            <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+          </button>
+
+          <button onclick="smartApp.switchTab('tab-chat')" data-tab-btn="tab-chat" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="message-square" class="w-4 h-4 text-cyan-400"></i>
+            <span class="flex-1 text-left">Secure Chat</span>
+            <span id="chat-unread-badge" class="hidden text-[10px] bg-brand-500 text-white font-bold px-1.5 py-0.2 rounded-full">1</span>
+          </button>
+
+          <button onclick="smartApp.switchTab('tab-live-tracking')" data-tab-btn="tab-live-tracking" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="map-pin" class="w-4 h-4 text-rose-400"></i>
+            <span>Live Tracking</span>
+          </button>
+
+          <div class="text-[10px] font-bold uppercase text-slate-500 px-3 pt-3 pb-1 tracking-wider">Community & Tools</div>
+
+          <button onclick="smartApp.switchTab('tab-community')" data-tab-btn="tab-community" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="users" class="w-4 h-4 text-amber-400"></i>
+            <span>Community</span>
+          </button>
+
+          <button onclick="smartApp.switchTab('tab-parcel')" data-tab-btn="tab-parcel" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="package" class="w-4 h-4 text-yellow-400"></i>
+            <span>Parcel Sharing</span>
+          </button>
+
+          <button onclick="smartApp.switchTab('tab-safety')" data-tab-btn="tab-safety" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500"></i>
+            <span class="flex-1 text-left">Safety Center</span>
+            <span class="text-[9px] bg-rose-500/20 text-rose-300 px-1 rounded font-bold">SOS</span>
+          </button>
+
+          <div class="text-[10px] font-bold uppercase text-slate-500 px-3 pt-3 pb-1 tracking-wider">Account</div>
+
+          <button onclick="smartApp.switchTab('tab-profile')" data-tab-btn="tab-profile" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="user" class="w-4 h-4 text-indigo-400"></i>
+            <span>My Profile</span>
+          </button>
+
+          <button onclick="smartApp.switchTab('tab-settings')" data-tab-btn="tab-settings" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white transition-colors">
+            <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i>
+            <span>Settings</span>
+          </button>
+        </nav>
+
+        <!-- Sidebar User Card & Logout -->
+        <div class="p-3 border-t border-slate-800 bg-slate-950/40">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="smartApp.switchTab('tab-profile')">
+              <div class="relative">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="avatar" class="w-8 h-8 rounded-full object-cover border border-emerald-400">
+                <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-slate-900"></span>
+              </div>
+              <div class="overflow-hidden">
+                <div class="text-xs font-bold text-white truncate user-display-name">Anurag Sharma</div>
+                <div class="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+                  <i data-lucide="shield-check" class="w-2.5 h-2.5"></i> Trust: 85%
+                </div>
+              </div>
+            </div>
+            <button onclick="smartApp.logout()" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors" title="Logout">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT AREA -->
+      <div class="flex-1 flex flex-col min-w-0 bg-slate-950 overflow-hidden">
+        
+        <!-- TOP APP HEADER -->
+        <header class="h-14 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between flex-shrink-0 z-10 backdrop-blur-md">
+          <!-- Mobile Menu & Breadcrumb -->
+          <div class="flex items-center gap-3">
+            <button onclick="smartApp.toggleMobileSidebar()" class="md:hidden p-2 text-slate-400 hover:text-white rounded-lg bg-slate-800/80">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-slate-400 hidden sm:inline">Platform /</span>
+              <span id="header-page-title" class="font-bold text-white font-display text-sm sm:text-base">Dashboard</span>
+            </div>
+          </div>
+
+          <!-- Quick Actions & Notification Bell -->
+          <div class="flex items-center space-x-3">
+            <!-- Active Route Pill -->
+            <div class="hidden sm:flex items-center gap-2 px-3 py-1 bg-brand-500/10 border border-brand-500/20 rounded-full text-xs text-brand-300">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>Next Trip: <strong>Lucknow → Ghaziabad</strong></span>
+            </div>
+
+            <!-- Notifications Button -->
+            <div class="relative">
+              <button onclick="smartApp.toggleNotifications()" id="btn-notifications" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl relative border border-slate-800">
+                <i data-lucide="bell" class="w-4 h-4"></i>
+                <span id="notif-badge" class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-900"></span>
+              </button>
+
+              <!-- Notifications Dropdown -->
+              <div id="notifications-panel" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="bell" class="w-4 h-4 text-brand-400"></i>
+                    <span class="font-bold text-xs text-white">Notifications</span>
+                  </div>
+                  <button onclick="smartApp.markAllNotificationsRead()" class="text-[11px] text-brand-400 hover:underline">Mark all read</button>
+                </div>
+                <div id="notifications-list" class="max-h-80 overflow-y-auto divide-y divide-slate-800 text-xs custom-scrollbar">
+                  <!-- Injected by JavaScript -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick SOS Header Action -->
+            <button onclick="smartApp.triggerEmergencySOS()" class="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-600/30 flex items-center gap-1.5 animate-pulse">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">SOS</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- MAIN SCROLLABLE VIEW CONTAINER -->
+        <main class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 pb-20 md:pb-6">
+
+          <!-- ========================================================== -->
+          <!-- TAB: DASHBOARD (HOME SCREEN) -->
+          <!-- ========================================================== -->
+          <div id="tab-dashboard" class="tab-view space-y-6">
+            
+            <!-- Hero Welcome Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-900 via-indigo-900 to-purple-900 border border-brand-500/30 p-6 sm:p-8 shadow-2xl">
+              <div class="relative z-10 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-brand-200 text-xs font-semibold mb-3 border border-white/10">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-300"></i> AI Travel Companion Radar Active
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold font-display text-white">
+                  Welcome back, <span class="user-display-name">Anurag</span> 👋
+                </h1>
+                <p class="text-slate-300 text-xs sm:text-sm mt-2 leading-relaxed">
+                  Your smart AI travel network has found <strong class="text-white">3 verified travelers</strong> going on your route from <strong>Lucknow to Ghaziabad</strong>.
+                </p>
+
+                <div class="mt-5 flex flex-wrap gap-3">
+                  <button onclick="smartApp.switchTab('tab-create-journey')" class="px-4 py-2.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-500/30 flex items-center gap-2 transition-transform active:scale-95">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Plan / Create Journey</span>
+                  </button>
+                  <button onclick="smartApp.switchTab('tab-ai-matching')" class="px-4 py-2.5 bg-slate-900/60 hover:bg-slate-900 text-white border border-white/20 rounded-xl text-xs font-semibold backdrop-blur-sm flex items-center gap-2">
+                    <i data-lucide="bot" class="w-4 h-4 text-purple-400"></i>
+                    <span>View AI Matches (94%)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Graphic Background Art -->
+              <div class="absolute -right-10 -bottom-10 opacity-20 pointer-events-none">
+                <i data-lucide="compass" class="w-72 h-72 text-white"></i>
+              </div>
+            </div>
+
+            <!-- User Key Statistics Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Stat 1 -->
+              <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="calendar" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="text-[11px] text-slate-400 font-semibold uppercase">Upcoming Journey</div>
+                  <div class="text-sm sm:text-base font-bold text-white mt-0.5" id="dash-stat-journey">12 Oct 2026</div>
+                  <div class="text-[10px] text-brand-400">Lucknow → GZB</div>
+                </div>
+              </div>
+
+              <!-- Stat 2 -->
+              <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="text-[11px] text-slate-400 font-semibold uppercase">Travel Matches</div>
+                  <div class="text-sm sm:text-base font-bold text-white mt-0.5">3 Companions</div>
+                  <div class="text-[10px] text-emerald-400 font-semibold">94% Max Match</div>
+                </div>
+              </div>
+
+              <!-- Stat 3 -->
+              <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="users" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="text-[11px] text-slate-400 font-semibold uppercase">Community Hub</div>
+                  <div class="text-sm sm:text-base font-bold text-white mt-0.5">552 Members</div>
+                  <div class="text-[10px] text-amber-400">Lucknow in GZB</div>
+                </div>
+              </div>
+
+              <!-- Stat 4 -->
+              <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="text-[11px] text-slate-400 font-semibold uppercase">Trust Score</div>
+                  <div class="text-sm sm:text-base font-bold text-emerald-400 mt-0.5">85% Verified</div>
+                  <div class="text-[10px] text-slate-400">Safe Traveler Tier</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Feature Cards Grid -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-bold font-display text-white flex items-center gap-2">
+                  <i data-lucide="grid" class="w-4 h-4 text-brand-400"></i>
+                  Platform Services & Hubs
+                </h3>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button onclick="smartApp.switchTab('tab-create-journey')" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-brand-500/50 hover:bg-slate-800/80 text-left transition-all group">
+                  <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="map" class="w-5 h-5"></i>
+                  </div>
+                  <div class="font-bold text-xs sm:text-sm text-white">Find Travelers</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Search route companions</div>
+                </button>
+
+                <button onclick="smartApp.switchTab('tab-ai-matching')" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-800/80 text-left transition-all group">
+                  <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="bot" class="w-5 h-5"></i>
+                  </div>
+                  <div class="font-bold text-xs sm:text-sm text-white">AI Matching</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Neural compatibility score</div>
+                </button>
+
+                <button onclick="smartApp.switchTab('tab-chat')" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800/80 text-left transition-all group">
+                  <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                  </div>
+                  <div class="font-bold text-xs sm:text-sm text-white">Secure Chat</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">End-to-end verified inbox</div>
+                </button>
+
+                <button onclick="smartApp.switchTab('tab-live-tracking')" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-rose-500/50 hover:bg-slate-800/80 text-left transition-all group">
+                  <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="navigation" class="w-5 h-5"></i>
+                  </div>
+                  <div class="font-bold text-xs sm:text-sm text-white">Live Tracking</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Real-time companion GPS</div>
+                </button>
+
+                <button onclick="smartApp.switchTab('tab-community')" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-800/80 text-left transition-all group">
+                  <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                  </div>
+                  <div class="font-bold text-xs sm:text-sm text-white">Community</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Hometown student circles</div>
+                </button>
+
+                <button onclick="smartApp.switchTab('tab-parcel')" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-yellow-500/50 hover:bg-slate-800/80 text-left transition-all group">
+                  <div class="w-10 h-10 rounded-xl bg-yellow-500/20 text-yellow-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="package" class="w-5 h-5"></i>
+                  </div>
+                  <div class="font-bold text-xs sm:text-sm text-white">Parcel Sharing</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Carry & deliver safely</div>
+                </button>
+
+                <button onclick="smartApp.switchTab('tab-safety')" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-rose-500/50 hover:bg-slate-800/80 text-left transition-all group">
+                  <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                  </div>
+                  <div class="font-bold text-xs sm:text-sm text-white">Safety Center</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">SOS & emergency contact</div>
+                </button>
+
+                <button onclick="smartApp.switchTab('tab-profile')" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/80 text-left transition-all group">
+                  <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                  </div>
+                  <div class="font-bold text-xs sm:text-sm text-white">My Profile</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Trust scores & history</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- AI Recommended Travelers Section -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="text-base font-bold font-display text-white flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-brand-400"></i>
+                    AI Recommended Travelers for You
+                  </h3>
+                  <p class="text-xs text-slate-400">Personalized matching based on route, date, and trust score</p>
+                </div>
+                <button onclick="smartApp.switchTab('tab-ai-matching')" class="text-xs text-brand-400 hover:underline font-semibold flex items-center gap-1">
+                  View All Matches <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <div id="dashboard-travelers-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Aman Verma (Primary Lead Match) -->
+                <div class="bg-slate-900/90 border border-slate-800 hover:border-brand-500/50 rounded-2xl p-5 shadow-xl transition-all relative overflow-hidden flex flex-col justify-between">
+                  <div class="absolute top-0 right-0 bg-gradient-to-l from-emerald-500 to-cyan-500 text-slate-950 text-[10px] font-extrabold px-3 py-1 rounded-bl-xl shadow-md">
+                    94% AI MATCH
+                  </div>
+                  
+                  <div>
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80" alt="Aman Verma" class="w-12 h-12 rounded-xl object-cover border-2 border-emerald-400">
+                        <span class="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5" title="Verified">
+                          <i data-lucide="check" class="w-3 h-3"></i>
+                        </span>
+                      </div>
+                      <div>
+                        <div class="font-bold text-white text-sm flex items-center gap-1">
+                          <span>Aman Verma</span>
+                          <i data-lucide="badge-check" class="w-4 h-4 text-cyan-400"></i>
+                        </div>
+                        <div class="text-[11px] text-slate-400">Hometown: <strong>Lucknow</strong></div>
+                        <div class="text-[10px] text-emerald-400 font-semibold">Trust Score: 92%</div>
+                      </div>
+                    </div>
+
+                    <div class="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800 text-xs space-y-1 mb-4">
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Route:</span>
+                        <span class="font-semibold text-white">Lucknow → Ghaziabad</span>
+                      </div>
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Date & Time:</span>
+                        <span class="font-semibold text-brand-300">12 Oct 2026 • 09:30 AM</span>
+                      </div>
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Mode:</span>
+                        <span class="font-semibold text-amber-300">Train (AC-3 Tier)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 pt-2">
+                    <button onclick="smartApp.viewTravelerProfile('aman')" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-white font-semibold transition-colors border border-slate-700">
+                      View Profile
+                    </button>
+                    <button onclick="smartApp.openConnectModal('aman')" class="flex-1 py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs text-white font-bold transition-all shadow-md shadow-brand-600/30">
+                      Connect
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Rahul Sharma (91% Match) -->
+                <div class="bg-slate-900/90 border border-slate-800 hover:border-purple-500/50 rounded-2xl p-5 shadow-xl transition-all relative overflow-hidden flex flex-col justify-between">
+                  <div class="absolute top-0 right-0 bg-purple-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl shadow-md">
+                    91% AI MATCH
+                  </div>
+                  
+                  <div>
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80" alt="Rahul Sharma" class="w-12 h-12 rounded-xl object-cover border-2 border-purple-400">
+                        <span class="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5">
+                          <i data-lucide="check" class="w-3 h-3"></i>
+                        </span>
+                      </div>
+                      <div>
+                        <div class="font-bold text-white text-sm flex items-center gap-1">
+                          <span>Rahul Sharma</span>
+                          <i data-lucide="badge-check" class="w-4 h-4 text-purple-400"></i>
+                        </div>
+                        <div class="text-[11px] text-slate-400">Hometown: <strong>Kanpur</strong></div>
+                        <div class="text-[10px] text-emerald-400 font-semibold">Trust Score: 89%</div>
+                      </div>
+                    </div>
+
+                    <div class="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800 text-xs space-y-1 mb-4">
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Route:</span>
+                        <span class="font-semibold text-white">Delhi → Ghaziabad</span>
+                      </div>
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Date & Time:</span>
+                        <span class="font-semibold text-brand-300">12 Oct 2026 • 10:15 AM</span>
+                      </div>
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Mode:</span>
+                        <span class="font-semibold text-amber-300">Metro / Train</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 pt-2">
+                    <button onclick="smartApp.viewTravelerProfile('rahul')" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-white font-semibold border border-slate-700">
+                      View Profile
+                    </button>
+                    <button onclick="smartApp.openConnectModal('rahul')" class="flex-1 py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs text-white font-bold">
+                      Connect
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Priya Singh (87% Match) -->
+                <div class="bg-slate-900/90 border border-slate-800 hover:border-pink-500/50 rounded-2xl p-5 shadow-xl transition-all relative overflow-hidden flex flex-col justify-between">
+                  <div class="absolute top-0 right-0 bg-pink-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl shadow-md">
+                    87% AI MATCH
+                  </div>
+                  
+                  <div>
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80" alt="Priya Singh" class="w-12 h-12 rounded-xl object-cover border-2 border-pink-400">
+                        <span class="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5">
+                          <i data-lucide="check" class="w-3 h-3"></i>
+                        </span>
+                      </div>
+                      <div>
+                        <div class="font-bold text-white text-sm flex items-center gap-1">
+                          <span>Priya Singh</span>
+                          <i data-lucide="badge-check" class="w-4 h-4 text-pink-400"></i>
+                        </div>
+                        <div class="text-[11px] text-slate-400">Hometown: <strong>Kanpur</strong></div>
+                        <div class="text-[10px] text-emerald-400 font-semibold">Trust Score: 95%</div>
+                      </div>
+                    </div>
+
+                    <div class="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800 text-xs space-y-1 mb-4">
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Route:</span>
+                        <span class="font-semibold text-white">Kanpur → Ghaziabad</span>
+                      </div>
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Date & Time:</span>
+                        <span class="font-semibold text-brand-300">12 Oct 2026 • 11:00 AM</span>
+                      </div>
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="text-slate-400">Mode:</span>
+                        <span class="font-semibold text-amber-300">Volvo AC Bus</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 pt-2">
+                    <button onclick="smartApp.viewTravelerProfile('priya')" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-white font-semibold border border-slate-700">
+                      View Profile
+                    </button>
+                    <button onclick="smartApp.openConnectModal('priya')" class="flex-1 py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs text-white font-bold">
+                      Connect
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: CREATE JOURNEY -->
+          <!-- ========================================================== -->
+          <div id="tab-create-journey" class="tab-view hidden max-w-2xl mx-auto space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+              <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+                <div>
+                  <h2 class="text-xl font-bold font-display text-white flex items-center gap-2">
+                    <i data-lucide="navigation" class="w-5 h-5 text-emerald-400"></i>
+                    Create New Journey
+                  </h2>
+                  <p class="text-xs text-slate-400 mt-0.5">Post your itinerary so AI can find trusted verified companions</p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
+                  Step 2 of Flow
+                </span>
+              </div>
+
+              <form onsubmit="smartApp.handleCreateJourney(event)" class="space-y-4">
+                <!-- Origin & Destination -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-brand-400"></span> From City
+                    </label>
+                    <input type="text" id="journey-from" value="Lucknow" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none" placeholder="e.g. Lucknow">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-rose-400"></span> To Destination
+                    </label>
+                    <input type="text" id="journey-to" value="Ghaziabad" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none" placeholder="e.g. Ghaziabad / IMS College">
+                  </div>
+                </div>
+
+                <!-- Date & Time -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Travel Date</label>
+                    <input type="date" id="journey-date" value="2026-10-12" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Travel Time</label>
+                    <input type="time" id="journey-time" value="09:30" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none">
+                  </div>
+                </div>
+
+                <!-- Travel Mode -->
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-2">Travel Mode</label>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-3 p-3 bg-slate-950/50 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition-colors">
+                      <input type="radio" name="travel_mode" value="Train" checked class="text-brand-600 focus:ring-brand-500">
+                      <div class="flex items-center gap-2">
+                        <i data-lucide="train" class="w-4 h-4 text-brand-400"></i>
+                        <span class="text-xs font-medium text-slate-200">Train</span>
+                      </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 bg-slate-950/50 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition-colors">
+                      <input type="radio" name="travel_mode" value="Bus" class="text-brand-600 focus:ring-brand-500">
+                      <div class="flex items-center gap-2">
+                        <i data-lucide="bus" class="w-4 h-4 text-cyan-400"></i>
+                        <span class="text-xs font-medium text-slate-200">Bus / Coach</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Purpose -->
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-2">Purpose of Journey</label>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/80 rounded-xl cursor-pointer">
+                      <input type="radio" name="journey_purpose" value="Education" checked class="text-brand-600">
+                      <span>🎓 Education</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/80 rounded-xl cursor-pointer">
+                      <input type="radio" name="journey_purpose" value="Job" class="text-brand-600">
+                      <span>💼 Job / Work</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/80 rounded-xl cursor-pointer">
+                      <input type="radio" name="journey_purpose" value="Business" class="text-brand-600">
+                      <span>👔 Business</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/80 rounded-xl cursor-pointer">
+                      <input type="radio" name="journey_purpose" value="Tourism" class="text-brand-600">
+                      <span>🏖 Tourism</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/80 rounded-xl cursor-pointer">
+                      <input type="radio" name="journey_purpose" value="Personal" class="text-brand-600">
+                      <span>🏡 Personal / Home</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- AI Matching Preferences -->
+                <div class="pt-2">
+                  <label class="block text-xs font-semibold text-slate-300 mb-2">AI Companion Preferences</label>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/70 rounded-xl cursor-pointer">
+                      <input type="checkbox" checked class="rounded text-brand-600">
+                      <span>Same hometown (Lucknow)</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/70 rounded-xl cursor-pointer">
+                      <input type="checkbox" checked class="rounded text-brand-600">
+                      <span>Same route & boarding point</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/70 rounded-xl cursor-pointer">
+                      <input type="checkbox" checked class="rounded text-brand-600">
+                      <span>Similar travel time (±1 hr)</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-950/50 border border-slate-700/70 rounded-xl cursor-pointer">
+                      <input type="checkbox" checked class="rounded text-brand-600">
+                      <span>Verified travelers only (Trust >80%)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button type="submit" class="w-full mt-4 py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-98">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i>
+                  <span>Create Journey & Run AI Matching</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: AI TRAVELER MATCHING -->
+          <!-- ========================================================== -->
+          <div id="tab-ai-matching" class="tab-view hidden space-y-6">
+            
+            <!-- AI Scanner Animation Box -->
+            <div id="ai-scanning-state" class="p-8 rounded-3xl bg-slate-900 border border-purple-500/30 text-center relative overflow-hidden shadow-2xl">
+              <!-- Radar Scanner graphic -->
+              <div class="relative w-28 h-28 mx-auto mb-4 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-2 border-purple-500/20"></div>
+                <div class="absolute inset-2 rounded-full border border-purple-500/40"></div>
+                <div class="absolute inset-6 rounded-full border border-purple-500/60 animate-ping opacity-30"></div>
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-purple-600/40 relative z-10">
+                  <i data-lucide="bot" class="w-7 h-7"></i>
+                </div>
+              </div>
+
+              <h2 class="text-2xl font-bold font-display text-white">AI-Powered Traveler Matching</h2>
+              <p class="text-xs text-purple-300 mt-1 max-w-lg mx-auto" id="ai-scan-status-text">
+                AI is finding the best travel companions for you...
+              </p>
+
+              <!-- Real-time Analysis Metrics Animation -->
+              <div class="mt-6 max-w-xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div class="p-2.5 rounded-xl bg-slate-950/70 border border-purple-500/20 text-purple-200">
+                  <div class="text-[10px] text-slate-400">Route Sync</div>
+                  <div class="font-bold text-emerald-400">100% Exact</div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/70 border border-purple-500/20 text-purple-200">
+                  <div class="text-[10px] text-slate-400">Date & Time</div>
+                  <div class="font-bold text-emerald-400">98% Synced</div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/70 border border-purple-500/20 text-purple-200">
+                  <div class="text-[10px] text-slate-400">Hometown Match</div>
+                  <div class="font-bold text-emerald-400">Lucknow Hub</div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/70 border border-purple-500/20 text-purple-200">
+                  <div class="text-[10px] text-slate-400">Avg Trust Score</div>
+                  <div class="font-bold text-cyan-400">92% Verified</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Matched Travelers List -->
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-bold font-display text-white flex items-center gap-2">
+                    <i data-lucide="award" class="w-5 h-5 text-yellow-400"></i>
+                    Best AI Companion Matches
+                  </h3>
+                  <p class="text-xs text-slate-400">Ranked by route overlap, verified credentials, and community feedback</p>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <!-- 1. Aman Verma - 94% Match -->
+                <div class="bg-gradient-to-r from-slate-900 to-slate-900/90 border-2 border-brand-500/50 rounded-2xl p-5 shadow-2xl relative">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                      <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&auto=format&fit=crop&q=80" alt="Aman Verma" class="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-400 shadow-lg">
+                        <span class="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-1" title="Govt Verified">
+                          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        </span>
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-base font-bold text-white">Aman Verma</h4>
+                          <span class="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                            <i data-lucide="shield-check" class="w-3 h-3"></i> Verified
+                          </span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-0.5">Lucknow → Ghaziabad • <strong>12 Oct 2026 (09:30 AM)</strong></p>
+                        <div class="flex flex-wrap gap-1.5 mt-2 text-[10px]">
+                          <span class="px-2 py-0.5 rounded bg-brand-500/10 text-brand-300 border border-brand-500/20 font-medium">✓ Same Route</span>
+                          <span class="px-2 py-0.5 rounded bg-brand-500/10 text-brand-300 border border-brand-500/20 font-medium">✓ Same Date</span>
+                          <span class="px-2 py-0.5 rounded bg-brand-500/10 text-brand-300 border border-brand-500/20 font-medium">✓ Similar Time</span>
+                          <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-medium">✓ Lucknow Native</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-800">
+                      <div class="text-right">
+                        <div class="text-2xl font-black font-display text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+                          94% Match
+                        </div>
+                        <div class="text-[10px] text-slate-400">Trust Score: <strong class="text-emerald-400">92%</strong></div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button onclick="smartApp.viewTravelerProfile('aman')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-700 transition-colors">
+                          View Profile
+                        </button>
+                        <button onclick="smartApp.openConnectModal('aman')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-xs font-bold text-white shadow-lg shadow-brand-600/30 transition-all flex items-center gap-1.5">
+                          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                          <span>Connect</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Rahul Sharma - 91% Match -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                      <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&auto=format&fit=crop&q=80" alt="Rahul Sharma" class="w-14 h-14 rounded-2xl object-cover border-2 border-purple-400">
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-base font-bold text-white">Rahul Sharma</h4>
+                          <span class="text-[10px] bg-purple-500/20 text-purple-300 font-bold px-2 py-0.5 rounded-full border border-purple-500/30">Verified</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-0.5">Delhi → Ghaziabad • <strong>12 Oct 2026 (10:15 AM)</strong></p>
+                        <div class="flex flex-wrap gap-1.5 mt-2 text-[10px]">
+                          <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">✓ Overlapping Route</span>
+                          <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">✓ Same Date</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-800">
+                      <div class="text-right">
+                        <div class="text-xl font-bold font-display text-purple-400">91% Match</div>
+                        <div class="text-[10px] text-slate-400">Trust: 89%</div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button onclick="smartApp.viewTravelerProfile('rahul')" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-white border border-slate-700">
+                          View Profile
+                        </button>
+                        <button onclick="smartApp.openConnectModal('rahul')" class="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white">
+                          Connect
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Priya Singh - 87% Match -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                      <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&auto=format&fit=crop&q=80" alt="Priya Singh" class="w-14 h-14 rounded-2xl object-cover border-2 border-pink-400">
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-base font-bold text-white">Priya Singh</h4>
+                          <span class="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">Verified</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-0.5">Kanpur → Ghaziabad • <strong>12 Oct 2026 (11:00 AM)</strong></p>
+                        <div class="flex flex-wrap gap-1.5 mt-2 text-[10px]">
+                          <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">✓ Same Corridor</span>
+                          <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">✓ Super Host Rating</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-800">
+                      <div class="text-right">
+                        <div class="text-xl font-bold font-display text-pink-400">87% Match</div>
+                        <div class="text-[10px] text-slate-400">Trust: 95%</div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button onclick="smartApp.viewTravelerProfile('priya')" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-white border border-slate-700">
+                          View Profile
+                        </button>
+                        <button onclick="smartApp.openConnectModal('priya')" class="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white">
+                          Connect
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: SECURE CHAT -->
+          <!-- ========================================================== -->
+          <div id="tab-chat" class="tab-view hidden h-[calc(100vh-140px)] min-h-[500px] flex flex-col md:flex-row bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+            
+            <!-- Conversations List (Left Side) -->
+            <div class="w-full md:w-80 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col bg-slate-950/50">
+              <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 class="font-bold text-sm text-white font-display">Secure Messages</h3>
+                  <div class="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+                    <i data-lucide="lock" class="w-2.5 h-2.5"></i> End-to-End Encrypted
+                  </div>
+                </div>
+                <span class="text-xs px-2 py-0.5 bg-brand-500/20 text-brand-300 rounded-full font-bold">1 Active</span>
+              </div>
+
+              <!-- Conversation items -->
+              <div class="flex-1 overflow-y-auto divide-y divide-slate-800/60 custom-scrollbar">
+                <!-- Aman Verma (Active conversation) -->
+                <div class="p-3.5 bg-slate-800/60 flex items-center gap-3 cursor-pointer border-l-4 border-brand-500">
+                  <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" alt="Aman" class="w-11 h-11 rounded-xl object-cover border border-emerald-400">
+                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-slate-900"></span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-xs text-white truncate">Aman Verma</span>
+                      <span class="text-[10px] text-slate-400">Just now</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300 truncate mt-0.5" id="chat-sidebar-last-msg">
+                      Yes, I am taking the 9:30 AM train.
+                    </p>
+                    <div class="text-[9px] text-cyan-400 flex items-center gap-1 mt-0.5 font-medium">
+                      <span>Lucknow → Ghaziabad</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Group Chat item -->
+                <div onclick="smartApp.switchTab('tab-community')" class="p-3.5 hover:bg-slate-800/30 flex items-center gap-3 cursor-pointer">
+                  <div class="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-xs">
+                    LKO
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-xs text-white truncate">Lucknow in Ghaziabad Circle</span>
+                      <span class="text-[10px] text-slate-400">5m</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 truncate mt-0.5">Vikram: Anyone reaching today evening?</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chat Active Window (Right Side) -->
+            <div class="flex-1 flex flex-col bg-slate-900/90">
+              <!-- Chat Header -->
+              <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" alt="Aman" class="w-10 h-10 rounded-xl object-cover border border-emerald-400">
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-900"></span>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-bold text-sm text-white">Aman Verma</span>
+                      <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.2 rounded border border-emerald-500/30">Verified</span>
+                    </div>
+                    <div class="text-[10px] text-emerald-400 flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online • Trust Score: 92%
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chat Actions -->
+                <div class="flex items-center gap-2">
+                  <button onclick="smartApp.shareJourneyInChat()" class="px-2.5 py-1.5 bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 border border-brand-500/30 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all">
+                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Share Journey</span>
+                  </button>
+                  <button onclick="smartApp.switchTab('tab-live-tracking')" class="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold flex items-center gap-1">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Live Map</span>
+                  </button>
+                  <button onclick="smartApp.showReportModal('Aman Verma')" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg" title="Safety Options / Report">
+                    <i data-lucide="shield" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Security Notice Banner -->
+              <div class="bg-indigo-950/40 border-b border-indigo-900/50 px-4 py-2 text-[11px] text-indigo-300 flex items-center justify-between">
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="shield-check" class="w-4 h-4 text-cyan-400"></i>
+                  <span>Secure communication enabled between verified connected users.</span>
+                </div>
+                <span class="text-[10px] text-slate-400">Encryption: RSA-4096</span>
+              </div>
+
+              <!-- Messages Scroll Area -->
+              <div id="chat-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs custom-scrollbar">
+                <!-- User Message 1 -->
+                <div class="flex justify-end">
+                  <div class="max-w-xs sm:max-w-md bg-brand-600 text-white rounded-2xl rounded-tr-sm p-3 shadow-md">
+                    <p>Hi Aman, are you traveling tomorrow?</p>
+                    <div class="text-[9px] text-indigo-200 text-right mt-1">09:32 AM • Sent ✓✓</div>
+                  </div>
+                </div>
+
+                <!-- Aman Message 1 -->
+                <div class="flex justify-start">
+                  <div class="max-w-xs sm:max-w-md bg-slate-800 text-slate-100 rounded-2xl rounded-tl-sm p-3 border border-slate-700 shadow-md">
+                    <p>Yes, I am taking the 9:30 AM train.</p>
+                    <div class="text-[9px] text-slate-400 text-right mt-1">09:33 AM</div>
+                  </div>
+                </div>
+
+                <!-- User Message 2 -->
+                <div class="flex justify-end">
+                  <div class="max-w-xs sm:max-w-md bg-brand-600 text-white rounded-2xl rounded-tr-sm p-3 shadow-md">
+                    <p>Great! We can coordinate our journey.</p>
+                    <div class="text-[9px] text-indigo-200 text-right mt-1">09:34 AM • Sent ✓✓</div>
+                  </div>
+                </div>
+
+                <!-- Interactive Journey Card in Chat -->
+                <div id="chat-journey-card-slot"></div>
+              </div>
+
+              <!-- Chat Input Bar -->
+              <div class="p-3 border-t border-slate-800 bg-slate-950/60">
+                <form onsubmit="smartApp.sendChatMessage(event)" class="flex items-center gap-2">
+                  <button type="button" onclick="smartApp.shareJourneyInChat()" class="p-2 text-slate-400 hover:text-brand-400 hover:bg-slate-800 rounded-xl" title="Share Journey Card">
+                    <i data-lucide="ticket" class="w-4 h-4"></i>
+                  </button>
+                  <button type="button" onclick="smartApp.shareLocationInChat()" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl" title="Share Live GPS Location">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                  </button>
+
+                  <input type="text" id="chat-text-input" placeholder="Type a message to coordinate with Aman..." class="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+
+                  <button type="submit" class="p-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-md transition-all active:scale-95">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: LIVE LOCATION TRACKING -->
+          <!-- ========================================================== -->
+          <div id="tab-live-tracking" class="tab-view hidden space-y-6">
+            
+            <!-- Map Card Wrapper -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative">
+              
+              <!-- Map Top Status Bar -->
+              <div class="p-4 bg-slate-950/80 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+                  <div>
+                    <div class="text-xs font-bold text-white flex items-center gap-2 font-display">
+                      <span>Journey Status: <strong class="text-emerald-400">On the Way (Live)</strong></span>
+                      <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Lucknow → Ghaziabad</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400">
+                      Companion: <strong class="text-cyan-400">Aman Verma</strong> (Sharing Live GPS)
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <button id="btn-toggle-tracking" onclick="smartApp.toggleLiveSimulation()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-all">
+                    <i data-lucide="play" class="w-3.5 h-3.5" id="icon-tracking-toggle"></i>
+                    <span id="text-tracking-toggle">Simulate Live Movement</span>
+                  </button>
+                  <button onclick="smartApp.triggerEmergencySOS()" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-600/30 flex items-center gap-1.5">
+                    <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i>
+                    <span>SOS / Emergency</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Map Container -->
+              <div class="relative h-[420px] sm:h-[480px] w-full bg-slate-950">
+                <div id="live-map" class="w-full h-full z-0"></div>
+
+                <!-- Floating Route Overlay Card (Google Maps style) -->
+                <div class="absolute bottom-4 left-4 right-4 sm:right-auto sm:max-w-sm z-10 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 shadow-2xl">
+                  <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                    <div class="flex items-center gap-2">
+                      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                      <span class="font-bold text-xs text-white">Route Telemetry</span>
+                    </div>
+                    <span class="text-[10px] bg-brand-500/20 text-brand-300 px-2 py-0.5 rounded font-bold" id="map-speed-badge">Speed: 78 km/h</span>
+                  </div>
+
+                  <div class="space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between text-slate-300">
+                      <span class="text-slate-400">Current Location:</span>
+                      <span class="font-semibold text-white truncate ml-2" id="map-current-loc">Ghaziabad Railway Station</span>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-300">
+                      <span class="text-slate-400">Destination:</span>
+                      <span class="font-semibold text-brand-300">IMS Engineering College, GZB</span>
+                    </div>
+                    <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                      <div class="text-left">
+                        <div class="text-[10px] text-slate-400">Estimated Arrival:</div>
+                        <div class="text-lg font-black font-display text-emerald-400" id="map-eta-val">25 minutes</div>
+                      </div>
+                      <div class="text-right">
+                        <div class="text-[10px] text-slate-400">Distance Remaining:</div>
+                        <div class="text-sm font-bold text-white" id="map-dist-val">14.2 km</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 grid grid-cols-2 gap-2">
+                    <button onclick="smartApp.showToast('Live GPS link broadcasted to your emergency contacts', 'success')" class="w-full py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold">
+                      Share Live Link
+                    </button>
+                    <button onclick="smartApp.stopLiveTracking()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">
+                      Stop Sharing
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: COMMUNITY -->
+          <!-- ========================================================== -->
+          <div id="tab-community" class="tab-view hidden space-y-6">
+            
+            <!-- Community Header Banner -->
+            <div class="p-6 rounded-3xl bg-gradient-to-r from-amber-950/50 via-slate-900 to-indigo-950/50 border border-amber-500/20 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span class="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2.5 py-1 rounded-full border border-amber-500/30">
+                  Local Circles & Circles by Hometown
+                </span>
+                <h2 class="text-2xl font-bold font-display text-white mt-2">Smart Regional Communities</h2>
+                <p class="text-xs text-slate-300 mt-1">Connect with verified people from your hometown living or studying in your destination city.</p>
+              </div>
+
+              <button onclick="smartApp.openNewPostModal()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 self-start sm:self-auto">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Post in Community</span>
+              </button>
+            </div>
+
+            <!-- Regional Communities Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Community 1: People from Lucknow in Ghaziabad -->
+              <div class="bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-5 shadow-xl transition-all flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">Hometown Circle</span>
+                    <span class="text-xs text-slate-400 flex items-center gap-1">
+                      <i data-lucide="users" class="w-3.5 h-3.5 text-amber-400"></i> 124 Members
+                    </span>
+                  </div>
+                  <h3 class="font-bold text-white text-base">People from Lucknow in Ghaziabad</h3>
+                  <p class="text-xs text-slate-400 mt-1.5">For Lucknowites studying, working, or traveling across Ghaziabad & Delhi NCR.</p>
+                  
+                  <div class="my-3 p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 text-[11px] text-slate-300">
+                    <div class="text-[10px] font-bold text-amber-400 uppercase">Recent Discussion:</div>
+                    <p class="truncate mt-0.5">"Shared cab booking from Anand Vihar to IMS college on Friday"</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                  <button id="btn-join-comm-1" onclick="smartApp.toggleJoinCommunity('comm-1')" class="flex-1 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-bold text-white transition-colors">
+                    Joined ✓
+                  </button>
+                  <button onclick="smartApp.openCommunityDetail('lucknow-ghaziabad')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                    View Chat
+                  </button>
+                </div>
+              </div>
+
+              <!-- Community 2: Students in Ghaziabad -->
+              <div class="bg-slate-900 border border-slate-800 hover:border-purple-500/40 rounded-2xl p-5 shadow-xl transition-all flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-bold">Campus Network</span>
+                    <span class="text-xs text-slate-400 flex items-center gap-1">
+                      <i data-lucide="users" class="w-3.5 h-3.5 text-purple-400"></i> 342 Members
+                    </span>
+                  </div>
+                  <h3 class="font-bold text-white text-base">Students in Ghaziabad</h3>
+                  <p class="text-xs text-slate-400 mt-1.5">Engineering, management & medical college students sharing local guidance & PG accommodations.</p>
+                  
+                  <div class="my-3 p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 text-[11px] text-slate-300">
+                    <div class="text-[10px] font-bold text-purple-400 uppercase">Recent Discussion:</div>
+                    <p class="truncate mt-0.5">"Best tiffin services near NH-24 & library timings"</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                  <button id="btn-join-comm-2" onclick="smartApp.toggleJoinCommunity('comm-2')" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700">
+                    Join Community
+                  </button>
+                  <button onclick="smartApp.openCommunityDetail('students-ghaziabad')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                    View Chat
+                  </button>
+                </div>
+              </div>
+
+              <!-- Community 3: Delhi → Ghaziabad Travelers -->
+              <div class="bg-slate-900 border border-slate-800 hover:border-cyan-500/40 rounded-2xl p-5 shadow-xl transition-all flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-bold">Daily Commuters</span>
+                    <span class="text-xs text-slate-400 flex items-center gap-1">
+                      <i data-lucide="users" class="w-3.5 h-3.5 text-cyan-400"></i> 86 Members
+                    </span>
+                  </div>
+                  <h3 class="font-bold text-white text-base">Delhi → Ghaziabad Travelers</h3>
+                  <p class="text-xs text-slate-400 mt-1.5">Regular train & carpool commuters sharing daily real-time transit & traffic alerts.</p>
+                  
+                  <div class="my-3 p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 text-[11px] text-slate-300">
+                    <div class="text-[10px] font-bold text-cyan-400 uppercase">Recent Discussion:</div>
+                    <p class="truncate mt-0.5">"Metro Red Line morning rush update at Dilshad Garden"</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                  <button id="btn-join-comm-3" onclick="smartApp.toggleJoinCommunity('comm-3')" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700">
+                    Join Community
+                  </button>
+                  <button onclick="smartApp.openCommunityDetail('delhi-ghaziabad')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                    View Chat
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Community Group Discussion Feed -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+              <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold">
+                    LKO
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-sm text-white">Lucknow in Ghaziabad Circle — Discussion Feed</h3>
+                    <p class="text-xs text-slate-400">124 verified members active</p>
+                  </div>
+                </div>
+                <button onclick="smartApp.showToast('Subscribed to instant community travel alerts', 'info')" class="text-xs text-brand-400 hover:underline">
+                  Alert Settings
+                </button>
+              </div>
+
+              <!-- Community Posts -->
+              <div class="space-y-3" id="community-feed-posts">
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&auto=format&fit=crop&q=80" alt="Aman" class="w-7 h-7 rounded-full object-cover">
+                      <span class="font-bold text-xs text-white">Aman Verma</span>
+                      <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-semibold">Verified</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400">2 hours ago</span>
+                  </div>
+                  <p class="text-xs text-slate-200">
+                    Taking the morning Lucknow Intercity on the 12th. I have space in my auto from station to IMS College if any fellow student wants to share.
+                  </p>
+                  <div class="flex items-center gap-4 text-xs text-slate-400 pt-1">
+                    <button onclick="smartApp.likePost(this)" class="flex items-center gap-1 hover:text-rose-400">
+                      <i data-lucide="heart" class="w-3.5 h-3.5"></i> <span>14 Likes</span>
+                    </button>
+                    <button onclick="smartApp.switchTab('tab-chat')" class="flex items-center gap-1 hover:text-cyan-400">
+                      <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> <span>6 Replies</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: PARCEL SHARING -->
+          <!-- ========================================================== -->
+          <div id="tab-parcel" class="tab-view hidden space-y-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- Parcel Request Form (Left 2 cols) -->
+              <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+                  <div>
+                    <h2 class="text-xl font-bold font-display text-white flex items-center gap-2">
+                      <i data-lucide="package" class="w-5 h-5 text-yellow-400"></i>
+                      Community Parcel Sharing
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Send urgent documents, college notes, or home essentials with verified travelers</p>
+                  </div>
+                  <span class="text-xs font-semibold px-2.5 py-1 bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 rounded-full">
+                    P2P Delivery
+                  </span>
+                </div>
+
+                <form onsubmit="smartApp.handleFindParcelTraveler(event)" class="space-y-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">From City</label>
+                      <input type="text" id="parcel-from" value="Delhi" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">To Destination</label>
+                      <input type="text" id="parcel-to" value="Ghaziabad" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none">
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">Parcel Type</label>
+                      <select id="parcel-type" class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none">
+                        <option value="Documents / Books">Documents & Study Notes</option>
+                        <option value="Home Made Food / Sweets">Homemade Food / Sweets</option>
+                        <option value="Electronics / Gadget">Electronics / Charger / Key</option>
+                        <option value="Clothes / Essentials">Clothes / Small Bag</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">Weight</label>
+                      <input type="text" id="parcel-weight" value="1.5 kg (Small box)" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-300 mb-1">Preferred Date</label>
+                      <input type="date" value="2026-10-12" required class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-brand-500 focus:outline-none">
+                    </div>
+                  </div>
+
+                  <!-- Safety Warning Banner -->
+                  <div class="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-200 flex items-start gap-2.5">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                      <strong class="font-bold text-amber-300">Safety Warning & Protocol:</strong>
+                      <p class="text-[11px] text-amber-200/80 mt-0.5">
+                        Only hand over parcels to verified users. Always inspect open containers and never transport restricted, hazardous, or unknown contents.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-slate-950 font-extrabold text-sm shadow-xl shadow-yellow-600/30 flex items-center justify-center gap-2">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                    <span>Find Compatible Travelers</span>
+                  </button>
+                </form>
+              </div>
+
+              <!-- Compatible Travelers Result Card -->
+              <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                    <h3 class="font-bold text-sm text-white font-display">Compatible Traveler</h3>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full">Optimal Match</span>
+                  </div>
+
+                  <div id="parcel-match-container" class="space-y-4">
+                    <div class="p-4 rounded-2xl bg-slate-950/70 border border-emerald-500/30">
+                      <div class="flex items-center gap-3 mb-3">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" alt="Aman" class="w-12 h-12 rounded-xl object-cover border-2 border-emerald-400">
+                        <div>
+                          <div class="font-bold text-sm text-white flex items-center gap-1">
+                            <span>Aman Verma</span>
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                          </div>
+                          <div class="text-[11px] text-slate-400">Delhi → Ghaziabad</div>
+                          <div class="text-[10px] text-emerald-400 font-bold">✓ Trust Score: 92%</div>
+                        </div>
+                      </div>
+
+                      <div class="text-[11px] text-slate-300 space-y-1 bg-slate-900/90 p-2.5 rounded-xl">
+                        <div><strong>Travel Date:</strong> 12 October 2026</div>
+                        <div><strong>Capacity:</strong> Up to 3.0 kg</div>
+                        <div><strong>Status:</strong> Available to carry safe parcels</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-4">
+                  <button id="btn-request-parcel" onclick="smartApp.requestParcelSharing()" class="w-full py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    <span>Request Parcel Sharing</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: SAFETY CENTER -->
+          <!-- ========================================================== -->
+          <div id="tab-safety" class="tab-view hidden space-y-6">
+            
+            <!-- Safety Hero Alert Banner -->
+            <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 border border-rose-500/30 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <span class="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-3 py-1 rounded-full border border-rose-500/30 inline-flex items-center gap-1.5">
+                  <i data-lucide="shield" class="w-3 h-3"></i> 24/7 Security Architecture
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold font-display text-white mt-2">
+                  Your Safety Comes First
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+                  Smart Community uses AI identity verification, trusted circle networks, and automated SOS telemetry to ensure every traveler is protected.
+                </p>
+              </div>
+
+              <!-- Big SOS Trigger Button -->
+              <div class="flex-shrink-0">
+                <button onclick="smartApp.triggerEmergencySOS()" class="w-full sm:w-auto px-6 py-4 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-sm uppercase rounded-2xl shadow-2xl shadow-rose-600/50 flex items-center justify-center gap-3 border border-white/20 active:scale-95 transition-all">
+                  <i data-lucide="alert-octagon" class="w-6 h-6 animate-pulse"></i>
+                  <span>Trigger Instant SOS</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Safety Options & Controls Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- Card 1: Trust Score Breakdown -->
+              <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
+                  <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-bold text-white text-sm">Trust Score & Verification</h3>
+                <p class="text-xs text-slate-400 mt-1">Your trust score is 85%. Add Govt. ID to reach 98% Super-Verified status.</p>
+                <button onclick="smartApp.navigateTo('screen-verify')" class="mt-4 text-xs text-brand-400 font-bold hover:underline flex items-center gap-1">
+                  Manage Verification <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </button>
+              </div>
+
+              <!-- Card 2: Emergency Contacts -->
+              <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center mb-3">
+                  <i data-lucide="phone-call" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-bold text-white text-sm">Emergency Contacts</h3>
+                <p class="text-xs text-slate-400 mt-1">2 contacts configured (+91 99887 76655, +91 98112 23344). Auto-alerted upon SOS.</p>
+                <button onclick="smartApp.showToast('Emergency contact manager opened', 'info')" class="mt-4 text-xs text-brand-400 font-bold hover:underline flex items-center gap-1">
+                  Edit Contacts <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </button>
+              </div>
+
+              <!-- Card 3: Report & Block Center -->
+              <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-3">
+                  <i data-lucide="user-x" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-bold text-white text-sm">Report & Blocked Users</h3>
+                <p class="text-xs text-slate-400 mt-1">Zero tolerance for misconduct. Instantly ban or report suspicious profiles.</p>
+                <button onclick="smartApp.showReportModal('Generic User')" class="mt-4 text-xs text-brand-400 font-bold hover:underline flex items-center gap-1">
+                  File Incident Report <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Safety Guidelines Checklist -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+              <h3 class="font-bold text-base font-display text-white mb-4 flex items-center gap-2">
+                <i data-lucide="check-square" class="w-5 h-5 text-emerald-400"></i>
+                Essential Safe Travel Community Guidelines
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-300">
+                <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-start gap-2.5">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+                  <span>Always check the traveler's <strong>Trust Score</strong> and reviews before confirming offline meetings.</span>
+                </div>
+                <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-start gap-2.5">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+                  <span>Keep <strong>Live Location Sharing ON</strong> during transit so your companion and family can track route progress.</span>
+                </div>
+                <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-start gap-2.5">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+                  <span>Meet companions at prominent public landmarks (e.g. Railway platform, Metro concourse).</span>
+                </div>
+                <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-start gap-2.5">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+                  <span>Never transport uninspected parcels or transfer money outside verified channels.</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: USER PROFILE -->
+          <!-- ========================================================== -->
+          <div id="tab-profile" class="tab-view hidden space-y-6">
+            
+            <!-- Profile Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+              <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div class="relative">
+                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" alt="avatar" class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-brand-500 shadow-xl">
+                  <span class="absolute bottom-1 right-1 bg-emerald-500 text-white rounded-full p-1.5 shadow-md">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                  </span>
+                </div>
+
+                <div class="flex-1 text-center sm:text-left">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div class="flex items-center justify-center sm:justify-start gap-2">
+                        <h2 class="text-2xl font-bold font-display text-white user-display-name">Anurag Sharma</h2>
+                        <span class="text-xs bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">Verified User</span>
+                      </div>
+                      <p class="text-xs text-slate-400 mt-1">Hometown: <strong>Lucknow</strong> • Current City: <strong>Ghaziabad (Delhi NCR)</strong></p>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-2">
+                      <button onclick="smartApp.switchTab('tab-settings')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold border border-slate-700">
+                        Settings
+                      </button>
+                      <button onclick="smartApp.showToast('Profile updated', 'success')" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold shadow-md">
+                        Edit Profile
+                      </button>
+                    </div>
+                  </div>
+
+                  <p class="text-xs text-slate-300 mt-3 max-w-xl">
+                    Computer Science Student & frequent traveler between Lucknow and Ghaziabad. Passionate about AI, community building, and safe travel carpooling.
+                  </p>
+
+                  <div class="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-4 pt-3 border-t border-slate-800 text-xs">
+                    <div><strong class="text-white text-sm">85%</strong> <span class="text-slate-400">Trust Score</span></div>
+                    <div><strong class="text-white text-sm">8</strong> <span class="text-slate-400">Journeys Shared</span></div>
+                    <div><strong class="text-white text-sm">14</strong> <span class="text-slate-400">Connections</span></div>
+                    <div><strong class="text-white text-sm">3</strong> <span class="text-slate-400">Communities</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Travel History & Reviews -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Past Journeys -->
+              <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <h3 class="font-bold text-sm text-white font-display mb-4 flex items-center gap-2">
+                  <i data-lucide="clock" class="w-4 h-4 text-brand-400"></i>
+                  Recent Travel History
+                </h3>
+                <div class="space-y-3 text-xs">
+                  <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-white">Lucknow → Ghaziabad</div>
+                      <div class="text-[10px] text-slate-400">12 Oct 2026 (Upcoming) • Train</div>
+                    </div>
+                    <span class="text-[10px] bg-brand-500/20 text-brand-300 px-2 py-0.5 rounded font-bold">Active</span>
+                  </div>
+                  <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-white">Ghaziabad → Lucknow</div>
+                      <div class="text-[10px] text-slate-400">18 Sept 2026 • Train AC-3</div>
+                    </div>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">Completed</span>
+                  </div>
+                  <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-white">Delhi → Kanpur</div>
+                      <div class="text-[10px] text-slate-400">24 Aug 2026 • Volvo Bus</div>
+                    </div>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">Completed</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Community Reviews -->
+              <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <h3 class="font-bold text-sm text-white font-display mb-4 flex items-center gap-2">
+                  <i data-lucide="star" class="w-4 h-4 text-yellow-400"></i>
+                  Traveler Reviews (5.0 ★)
+                </h3>
+                <div class="space-y-3 text-xs">
+                  <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-1">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-white">Aman Verma</span>
+                      <span class="text-yellow-400 text-[11px]">★★★★★</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">"Punctual, friendly and coordinated train journey perfectly from Charbagh."</p>
+                  </div>
+                  <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-1">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-white">Vikram Rathore</span>
+                      <span class="text-yellow-400 text-[11px]">★★★★★</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">"Shared parcel was safely handed over on time. Highly recommended traveler."</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ========================================================== -->
+          <!-- TAB: SETTINGS -->
+          <!-- ========================================================== -->
+          <div id="tab-settings" class="tab-view hidden max-w-3xl mx-auto space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+              <div class="border-b border-slate-800 pb-4">
+                <h2 class="text-xl font-bold font-display text-white">System & Privacy Settings</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Manage your identity, security protocols, and live location preferences</p>
+              </div>
+
+              <!-- Account Section -->
+              <div class="space-y-3">
+                <h3 class="text-xs font-bold text-brand-400 uppercase tracking-wider">Account</h3>
+                <div class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div class="font-bold text-xs text-white">Two-Factor Authentication (2FA)</div>
+                    <div class="text-[11px] text-slate-400">Require SMS OTP / Authenticator code on new devices</div>
+                  </div>
+                  <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-brand-600">
+                </div>
+                <div class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div class="font-bold text-xs text-white">Change Password</div>
+                    <div class="text-[11px] text-slate-400">Last updated 1 month ago</div>
+                  </div>
+                  <button onclick="smartApp.showToast('Password change modal', 'info')" class="text-xs px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200">Update</button>
+                </div>
+              </div>
+
+              <!-- Privacy Section -->
+              <div class="space-y-3">
+                <h3 class="text-xs font-bold text-purple-400 uppercase tracking-wider">Privacy & Visibility</h3>
+                <div class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div class="font-bold text-xs text-white">Profile Visibility</div>
+                    <div class="text-[11px] text-slate-400">Allow verified travelers in your corridor to discover you</div>
+                  </div>
+                  <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-brand-600">
+                </div>
+                <div class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div class="font-bold text-xs text-white">Live Location Telemetry</div>
+                    <div class="text-[11px] text-slate-400">Automatically broadcast GPS coords to approved journey companions</div>
+                  </div>
+                  <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-brand-600">
+                </div>
+              </div>
+
+              <!-- Notifications Section -->
+              <div class="space-y-3">
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Notifications</h3>
+                <div class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div class="font-bold text-xs text-white">Push & In-App Alerts</div>
+                    <div class="text-[11px] text-slate-400">Receive instant AI match & connection acceptance alerts</div>
+                  </div>
+                  <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-brand-600">
+                </div>
+              </div>
+
+              <!-- Logout CTA -->
+              <div class="pt-4 border-t border-slate-800 flex justify-end gap-3">
+                <button onclick="smartApp.logout()" class="px-5 py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <i data-lucide="log-out" class="w-4 h-4"></i>
+                  <span>Sign Out of Account</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- MODALS & POPUPS -->
+  <!-- ================================================================ -->
+
+  <!-- 1. TRAVELER PROFILE MODAL -->
+  <div id="modal-traveler-profile" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <button onclick="smartApp.closeModal('modal-traveler-profile')" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-4 mb-4">
+        <div class="relative">
+          <img id="modal-profile-img" src="" alt="Traveler" class="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-400">
+          <span class="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-1">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+          </span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 id="modal-profile-name" class="text-lg font-bold text-white font-display">Aman Verma</h3>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">Verified</span>
+          </div>
+          <div class="text-xs text-slate-400 mt-0.5" id="modal-profile-cities">Hometown: Lucknow • Current City: Ghaziabad</div>
+          <div class="text-[11px] text-emerald-400 font-bold mt-0.5" id="modal-profile-trust">AI Trust Score: 92%</div>
+        </div>
+      </div>
+
+      <!-- Travel Info Card -->
+      <div class="bg-slate-950/70 rounded-2xl p-4 border border-slate-800 text-xs space-y-2 mb-4">
+        <div class="font-bold text-brand-400 uppercase text-[10px] tracking-wider">Travel Information</div>
+        <div class="grid grid-cols-2 gap-2 text-slate-300">
+          <div>From: <strong class="text-white" id="modal-profile-from">Lucknow</strong></div>
+          <div>To: <strong class="text-white" id="modal-profile-to">Ghaziabad</strong></div>
+          <div>Date: <strong class="text-white" id="modal-profile-date">12 October 2026</strong></div>
+          <div>Time: <strong class="text-white" id="modal-profile-time">09:30 AM</strong></div>
+          <div>Mode: <strong class="text-white" id="modal-profile-mode">Train</strong></div>
+          <div>Purpose: <strong class="text-white">Education & Travel</strong></div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="text-xs text-slate-300 mb-4">
+        <div class="font-bold text-white mb-1">About</div>
+        <p id="modal-profile-about" class="text-slate-400 leading-relaxed">
+          Regular student traveler. Prefers traveling in verified community groups for safety and enjoyable conversations.
+        </p>
+      </div>
+
+      <!-- Reviews -->
+      <div class="text-xs text-slate-300 mb-6">
+        <div class="font-bold text-white mb-2">Community Reviews</div>
+        <div class="p-3 bg-slate-950/50 rounded-xl border border-slate-800 space-y-1">
+          <div class="flex items-center justify-between text-yellow-400 text-[10px]">
+            <span>★★★★★ Verified Companion</span>
+            <span class="text-slate-400">Sept 2026</span>
+          </div>
+          <p class="text-[11px] text-slate-300">"Very polite and respectful companion. Made the 7-hour journey smooth and safe."</p>
+        </div>
+      </div>
+
+      <!-- Modal Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="modal-btn-connect" onclick="smartApp.triggerConnectFromModal()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-brand-600/30">
+          Connect
+        </button>
+        <button id="modal-btn-message" onclick="smartApp.switchTab('tab-chat'); smartApp.closeModal('modal-traveler-profile');" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700">
+          Message
+        </button>
+        <button onclick="smartApp.showReportModal('Aman Verma')" class="py-3 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 text-xs border border-rose-500/30" title="Report User">
+          <i data-lucide="flag" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. CONNECTION REQUEST POPUP -->
+  <div id="modal-connect-request" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+      <div class="w-12 h-12 rounded-2xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="user-plus" class="w-6 h-6"></i>
+      </div>
+
+      <h3 class="text-lg font-bold font-display text-white text-center">Send Connection Request</h3>
+      <p class="text-xs text-slate-400 text-center mt-1">Connect with <strong class="text-white" id="connect-target-name">Aman Verma</strong> for verified travel companionship.</p>
+
+      <div class="my-4">
+        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Personalized Message</label>
+        <textarea id="connect-message-input" rows="3" class="w-full bg-slate-950/70 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand-500">Hi, I am also traveling on the same route. Let's connect and travel safely together.</textarea>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="smartApp.closeModal('modal-connect-request')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">
+          Cancel
+        </button>
+        <button id="btn-send-connection-req" onclick="smartApp.sendConnectionRequest()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-xs font-bold text-white shadow-lg shadow-brand-600/30 flex items-center justify-center gap-1.5">
+          <span>Send Request</span>
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. SOS EMERGENCY MODAL -->
+  <div id="modal-sos" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-rose-500 rounded-3xl max-w-md w-full p-6 shadow-2xl shadow-rose-900/50 text-center relative animate-pulse-slow">
+      <div class="w-16 h-16 rounded-full bg-rose-600 text-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-rose-600/50">
+        <i data-lucide="alert-octagon" class="w-8 h-8"></i>
+      </div>
+
+      <h3 class="text-xl font-black font-display text-rose-400">EMERGENCY SOS TRIGGERED</h3>
+      <p class="text-xs text-slate-300 mt-1">Live GPS telemetry and emergency distress SMS dispatched to 2 verified emergency contacts and local highway patrol.</p>
+
+      <div class="my-4 p-4 rounded-2xl bg-slate-950 border border-rose-500/40 text-xs text-left space-y-1.5">
+        <div class="flex justify-between text-slate-300">
+          <span>Active GPS:</span>
+          <span class="font-mono text-emerald-400 font-bold">28.6692° N, 77.4538° E</span>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span>Nearest Station:</span>
+          <span class="text-white font-semibold">Ghaziabad Junction (3.2 km)</span>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span>Alert Status:</span>
+          <span class="text-rose-400 font-bold">Transmitting Audio & Location</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="smartApp.closeModal('modal-sos')" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">
+          Dismiss False Alarm
+        </button>
+        <button onclick="smartApp.showToast('Calling Local Police Helpline (112)...', 'error')" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg">
+          Call Helpline (112)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. REPORT / BLOCK MODAL -->
+  <div id="modal-report" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+      <h3 class="text-base font-bold font-display text-white mb-2">Safety Center: Report / Block User</h3>
+      <p class="text-xs text-slate-400 mb-4">Our safety AI team reviews reports within 15 minutes.</p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Reason for Report</label>
+          <select class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+            <option>Suspicious behavior / Fake profile</option>
+            <option>Unsafe driving or inappropriate communication</option>
+            <option>Unverified parcel sharing request</option>
+            <option>Other policy violation</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Details (Optional)</label>
+          <textarea rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white" placeholder="Describe the incident..."></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 mt-5">
+        <button onclick="smartApp.closeModal('modal-report')" class="flex-1 py-2.5 rounded-xl bg-slate-800 text-xs text-slate-300">Cancel</button>
+        <button onclick="smartApp.submitReport()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-md">Submit Report & Block</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900/95 border-t border-slate-800 px-2 flex items-center justify-around z-30 backdrop-blur-lg">
+    <button onclick="smartApp.switchTab('tab-dashboard')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-brand-400 p-1">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+      <span class="text-[10px]">Home</span>
+    </button>
+    <button onclick="smartApp.switchTab('tab-ai-matching')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-purple-400 p-1">
+      <i data-lucide="bot" class="w-5 h-5"></i>
+      <span class="text-[10px]">AI Match</span>
+    </button>
+    <button onclick="smartApp.switchTab('tab-chat')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-cyan-400 p-1">
+      <i data-lucide="message-square" class="w-5 h-5"></i>
+      <span class="text-[10px]">Chat</span>
+    </button>
+    <button onclick="smartApp.switchTab('tab-live-tracking')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-400 p-1">
+      <i data-lucide="map-pin" class="w-5 h-5"></i>
+      <span class="text-[10px]">Live Map</span>
+    </button>
+    <button onclick="smartApp.switchTab('tab-safety')" class="flex flex-col items-center gap-1 text-rose-400 p-1">
+      <i data-lucide="shield-alert" class="w-5 h-5"></i>
+      <span class="text-[10px]">SOS</span>
+    </button>
+  </nav>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
